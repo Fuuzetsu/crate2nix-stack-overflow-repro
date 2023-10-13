@@ -20,6 +20,10 @@
       url = "github:kolloch/crate2nix";
       flake = false;
     };
+    nix-stack-overflow = {
+      url = "github:hercules-ci/nix/stack-overflow";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -29,6 +33,7 @@
     , flake-utils
     , flake-compat
     , crate2nix
+    , nix-stack-overflow
     }:
     flake-utils.lib.eachDefaultSystem (system:
     let
@@ -58,6 +63,9 @@
                 --prefix PATH : ${pkgs.lib.makeBinPath [ rust.rustToolchainPkgs.cargo pkgs.nix pkgs.nix-prefetch-git ]}
           '';
         };
+      nix-stack-overflow = inputs.nix-stack-overflow.packages."${system}".nix.overrideAttrs (_: _: {
+        doCheck = false;
+      });
       minNixVersion = "2.5";
     in
     assert pkgs.lib.asserts.assertMsg (! pkgs.lib.versionOlder builtins.nixVersion minNixVersion)
@@ -67,6 +75,7 @@
       packages = flake-utils.lib.flattenTree
         (rust.workspaceCrates
           // {
+          inherit nix-stack-overflow;
           inherit crate2nix;
           # A whole set of crates, useful for building every crate in workspace in
           # CI and such.
